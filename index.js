@@ -2,22 +2,22 @@ const http = require('http');
 
 var INTERVAL = process.argv[2] || 1000;
 var TIME = process.argv[3] || 5000;
+
 let clock;
 
 async function consoleDateAndTime () {
-  clock = setInterval(function () {
+  clock = setInterval(() => {
     console.log('Clock: ', new Date());
   }, INTERVAL);
-  clock();
 }
 
-async function stopClock () {
-  await setTimeout(function () {
-    console.log('stopClock1');
-    return clearInterval(clock);
-  }, TIME);
-  console.log('stopClock2'); /// ???? не отрабатывает
-  return new Date();
+function stopClock () {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      clearInterval(clock);
+      resolve(new Date());
+    }, TIME);
+  });
 }
 
 async function serverHandler (request, response) {
@@ -26,11 +26,10 @@ async function serverHandler (request, response) {
     try {
       consoleDateAndTime();
       result = await stopClock();
-      console.log('Current Date: ', result);
     } catch (error) {
       console.error(error);
     }
   }
-  response.end('response');
+  response.end('Current Date: ' + result);
 }
 http.createServer(serverHandler).listen(3000);
