@@ -1,35 +1,43 @@
+// Отлично. Одно но. Одновременно зайди с разных браузеров.
+// Все отрабатывает но вот в консоль продолжает бежать вывод.
+// Перезаписываеться таймер и теряется предидущий.
+// Лучше каждый раз создавать новый его екземпляр.
+// Подумай как прокинуть его внутрь промиса
+
 const http = require('http');
 
 var INTERVAL = process.argv[2] || 1000;
 var TIME = process.argv[3] || 5000;
 
-let clock;
+let clock = {};
+let id = 0;
 
-async function consoleDateAndTime () {
-  clock = setInterval(() => {
-    console.log('Clock: ', new Date());
+async function consoleDateAndTime (id) {
+  clock[id] = setInterval(() => {
+    console.log(`Clock ${id}:`, new Date());
   }, INTERVAL);
 }
 
-function stopClock () {
+function stopClock (id) {
   return new Promise(resolve => {
     setTimeout(() => {
-      clearInterval(clock);
+      clearInterval(clock[id]);
       resolve(new Date());
     }, TIME);
   });
 }
 
 async function serverHandler (request, response) {
+  id++;
   let result;
   if (request.method === 'GET' && request.url !== '/favicon.ico') {
     try {
-      consoleDateAndTime();
-      result = await stopClock();
+      consoleDateAndTime(id);
+      result = await stopClock(id);
     } catch (error) {
       console.error(error);
     }
   }
-  response.end('Current Date: ' + result);
+  response.end(`Current Date id ${id} : ${result}`);
 }
 http.createServer(serverHandler).listen(3000);
